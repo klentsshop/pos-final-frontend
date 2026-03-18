@@ -10,15 +10,16 @@ export default function ReporteModal({
 }) {
 
     const exportarExcelProfesional = () => {
-        if (!datos || !listaGastos) return;
+        if (!datos) return;
+        
+        // 🛡️ Aseguramos que listaGastos sea un array procesable
+        const gastosParaExcel = Array.from(listaGastos || []);
 
-        // A. Preparar datos de Ventas (Pestaña 1)
+        // A. Preparar datos de Ventas
         const datosVentas = Object.entries(datos.productos || {})
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([nombre, cantidad]) => {
-                // 🛡️ CORRECCIÓN: Definimos la variable precioUnit trayéndola de datos.precios
                 const precioUnit = datos.precios?.[nombre] || 0; 
-                
                 return {
                     "PRODUCTO / PLATO": nombre,
                     "CANTIDAD VENDIDA": cantidad,
@@ -28,7 +29,6 @@ export default function ReporteModal({
                 };
             });
 
-        // B. Fila de gran total
         datosVentas.push({
             "PRODUCTO / PLATO": ">>> TOTAL RECAUDADO EN VENTAS",
             "CANTIDAD VENDIDA": "",
@@ -37,37 +37,35 @@ export default function ReporteModal({
             "ESTADO EN CIERRE": ""
         });
 
-        
-        // C. Preparar datos de Gastos (Pestaña 2)
-        const datosGastos = [...(listaGastos || [])]
-            .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-            .map(g => ({
-                "FECHA REGISTRO": g.fecha || fechaInicio,
-                "PROVEEDOR / CONCEPTO": g.descripcion,
-                "MONTO PAGADO ($)": Number(g.monto)
-            }));
+        // B. Preparar datos de Gastos (CORREGIDO: Ahora sí guardamos el resultado en la constante)
+        const datosGastos = gastosParaExcel.map(g => ({
+            "FECHA REGISTRO": g.fecha || "Sin fecha",
+            "PROVEEDOR / CONCEPTO": String(g.descripcion || "Gasto sin nombre").toUpperCase(),
+            "MONTO PAGADO ($)": Number(g.monto) || 0
+        })).sort((a, b) => new Date(a["FECHA REGISTRO"]) - new Date(b["FECHA REGISTRO"]));
 
-            const datosResumen = [
-        { "CONCEPTO": "VENTAS TOTALES (BASE)", "VALOR": datos.ventas },
-        { "CONCEPTO": "PROPINAS", "VALOR": datos.totalPropinas || 0 },
-        { "CONCEPTO": "GASTOS", "VALOR": datos.gastos },
-        { "CONCEPTO": "TOTAL NETO EN CAJA", "VALOR": (datos.ventas + datos.totalPropinas - datos.gastos) },
-        { "CONCEPTO": "", "VALOR": "" },
-        { "CONCEPTO": "--- DESGLOSE DE VENTAS POR MEDIO ---", "VALOR": "" },
-        { "CONCEPTO": "Efectivo", "VALOR": datos.metodosPago?.efectivo || 0 },
-        { "CONCEPTO": "Tarjeta", "VALOR": datos.metodosPago?.tarjeta || 0 },
-        { "CONCEPTO": "Digital (Nequi/Davi/Transf)", "VALOR": datos.metodosPago?.digital || 0 },
-        { "CONCEPTO": "", "VALOR": "" }
-        
+        // C. Resumen Contable
+        const datosResumen = [
+            { "CONCEPTO": "VENTAS TOTALES (BASE)", "VALOR": datos.ventas },
+            { "CONCEPTO": "PROPINAS", "VALOR": datos.totalPropinas || 0 },
+            { "CONCEPTO": "GASTOS", "VALOR": datos.gastos },
+            { "CONCEPTO": "TOTAL NETO EN CAJA", "VALOR": (datos.ventas + (datos.totalPropinas || 0) - datos.gastos) },
+            { "CONCEPTO": "", "VALOR": "" },
+            { "CONCEPTO": "--- DESGLOSE DE VENTAS POR MEDIO ---", "VALOR": "" },
+            { "CONCEPTO": "Efectivo", "VALOR": datos.metodosPago?.efectivo || 0 },
+            { "CONCEPTO": "Tarjeta", "VALOR": datos.metodosPago?.tarjeta || 0 },
+            { "CONCEPTO": "Digital (Nequi/Davi/Transf)", "VALOR": datos.metodosPago?.digital || 0 }
         ];
+
         const libro = XLSX.utils.book_new();
         const hojaResumen = XLSX.utils.json_to_sheet(datosResumen);
         const hojaVentas = XLSX.utils.json_to_sheet(datosVentas);
         const hojaGastos = XLSX.utils.json_to_sheet(datosGastos);
         
-        hojaResumen['!cols'] = [{ wch: 45 },{ wch: 20 }];
-        hojaVentas['!cols'] = [{ wch: 35 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
-        hojaGastos['!cols'] = [{ wch: 20 }, { wch: 40 }, { wch: 18 }];
+        // Configuración de anchos de columna
+        hojaResumen['!cols'] = [{ wch: 45 }, { wch: 20 }];
+        hojaVentas['!cols'] = [{ wch: 40 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
+        hojaGastos['!cols'] = [{ wch: 25 }, { wch: 55 }, { wch: 20 }]; // 55 para que quepa bien el concepto
 
         XLSX.utils.book_append_sheet(libro, hojaResumen, "Resumen Medios de Pago");
         XLSX.utils.book_append_sheet(libro, hojaVentas, "Ventas por Plato");
@@ -87,6 +85,7 @@ export default function ReporteModal({
                     <h2 style={{ margin: 0, fontSize: '1.4rem' }}>📊 Cierre y Análisis</h2>
                     <button onClick={onClose} style={{ fontSize: '1.5em', border: 'none', background: 'none', cursor: 'pointer' }}>×</button>
                 </div>
+
                 <div style={{ backgroundColor: '#F9FAFB', padding: '15px', borderRadius: '10px', marginBottom: '20px', border: '1px solid #E5E7EB' }}>
                     <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: 'bold', textAlign: 'center' }}>PERIODO: {fechaInicio} al {fechaFin}</p>
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -95,6 +94,7 @@ export default function ReporteModal({
                     </div>
                     <button onClick={onGenerar} style={{ width: '100%', padding: '10px', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>🔍 ACTUALIZAR</button>
                 </div>
+
                 {cargando ? <p style={{ textAlign: 'center' }}>Calculando...</p> : (
                     <>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#1F2937', marginBottom: '5px' }}><span>Ventas Netas:</span><strong>${datos.ventas.toLocaleString('es-CO')}</strong></div>
@@ -105,29 +105,14 @@ export default function ReporteModal({
                             <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#92400E' }}>TOTAL RECAUDADO EN CAJA</span>
                             <span style={{ fontSize: '1.6rem', fontWeight: '900' }}>${(datos.ventas + (datos.totalPropinas || 0) - datos.gastos).toLocaleString('es-CO')}</span>
                         </div>
-                        <div style={{ 
-                        marginTop: '15px', 
-                        padding: '10px', 
-                        backgroundColor: '#F3F4F6', 
-                        borderRadius: '8px',
-                        fontSize: '0.85rem' 
-                        }}>
-                        <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: '#4B5563', borderBottom: '1px solid #D1D5DB' }}>
-                        💰 DESGLOSE POR MEDIO (Ventas)
-                        </p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>💵 Efectivo:</span>
-                        <strong>${(datos.metodosPago?.efectivo || 0).toLocaleString('es-CO')}</strong>
+
+                        <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#F3F4F6', borderRadius: '8px', fontSize: '0.85rem' }}>
+                            <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: '#4B5563', borderBottom: '1px solid #D1D5DB' }}>💰 DESGLOSE POR MEDIO</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>💵 Efectivo:</span><strong>${(datos.metodosPago?.efectivo || 0).toLocaleString('es-CO')}</strong></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>💳 Tarjeta:</span><strong>${(datos.metodosPago?.tarjeta || 0).toLocaleString('es-CO')}</strong></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>📱 Digital:</span><strong>${(datos.metodosPago?.digital || 0).toLocaleString('es-CO')}</strong></div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>💳 Tarjeta:</span>
-                        <strong>${(datos.metodosPago?.tarjeta || 0).toLocaleString('es-CO')}</strong>
-                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span>📱 Digital:</span>
-                        <strong>${(datos.metodosPago?.digital || 0).toLocaleString('es-CO')}</strong>
-                        </div>
-                        </div>
+
                         <button 
                             onClick={exportarExcelProfesional}
                             style={{
@@ -141,7 +126,7 @@ export default function ReporteModal({
 
                         <h3 style={{ marginTop: '20px', fontSize: '1rem', borderBottom: '2px solid #F3F4F6', paddingBottom: '5px' }}>🍽️ Productos</h3>
                         <div style={{ backgroundColor: '#F3F4F6', padding: '10px', borderRadius: '8px' }}>
-                            {Object.entries(datos.productos)
+                            {Object.entries(datos.productos || {})
                                 .sort(([a], [b]) => a.localeCompare(b))
                                 .map(([nombre, cant]) => (
                                     <div key={nombre} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E7EB', padding: '5px 0' }}>
@@ -153,7 +138,7 @@ export default function ReporteModal({
 
                         <h3 style={{ marginTop: '20px', fontSize: '1rem', borderBottom: '2px solid #FEE2E2', paddingBottom: '5px' }}>💸 Gastos</h3>
                         <div style={{ border: '1px solid #FEE2E2', padding: '10px', borderRadius: '8px' }}>
-                            {[...listaGastos]
+                            {(listaGastos || [])
                                 .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
                                 .map((g, idx) => (
                                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #FFF5F5', padding: '5px 0' }}>
