@@ -54,17 +54,8 @@ export async function POST(request) {
             
             // 🆕 Lógica Senior: Captura de categoría para la APK
             // .toUpperCase() es vital para que coincida con el Store de la tablet
-<<<<<<< HEAD
             const categoriaPlato = (p.categoria || "COCINA").trim().toUpperCase();
             estacionesSet.add(categoriaPlato);
-=======
-            const categoriaPlato = (p.categoria).trim().toUpperCase();
-            // 🆕 SOLO agregamos a pendientes si la categoría TIENE permiso de impresión
-            // (Si el campo seImprime es undefined, asumimos true por compatibilidad)
-            if (p.seImprime !== false) {
-                estacionesSet.add(categoriaPlato);
-            }
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
 
             return {
                 // Mantenemos tus generadores de keys y lógica de IDs intactos
@@ -86,11 +77,7 @@ export async function POST(request) {
         const estacionesPendientes = Array.from(estacionesSet);
 
         const fechaActual = new Date().toISOString();
-<<<<<<< HEAD
         const valorSolicitada = body.imprimirSolicitada === true;
-=======
-        const valorSolicitada = body.imprimirSolicitada !== false;
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
 
         // 2. ESCUDO ANTI-DUPLICADOS (GROQ Original intacto)
         let idDestino = ordenId;

@@ -17,10 +17,7 @@ export async function POST(req) {
         const totalPagado = Number(payload.totalPagado) || 0;
         const propinaRecaudada = Number(payload.propinaRecaudada) || 0;
         const ordenId = payload.ordenId;
-<<<<<<< HEAD
         const tipoOrden = payload.tipoOrden || 'mesa';
-=======
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
 
         // --- FECHAS Y FOLIO (Lógica original preservada) ---
         const now = new Date();
@@ -65,10 +62,7 @@ export async function POST(req) {
             folio: folioGenerado,
             mesa,
             mesero,
-<<<<<<< HEAD
             tipoOrden,
-=======
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
             metodoPago,
             totalPagado,
             propinaRecaudada,

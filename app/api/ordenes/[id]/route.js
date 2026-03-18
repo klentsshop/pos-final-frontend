@@ -25,11 +25,6 @@ export async function GET(request, { params }) {
     platosOrdenados[] {
         _key,
         nombrePlato,
-<<<<<<< HEAD
-=======
-        categoria,     
-        seImprime,
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
         cantidad,
         precioUnitario,
         subtotal,

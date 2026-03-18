@@ -139,11 +139,7 @@ export default function MenuPanel() {
             <div className={styles.posLayout}>
                 <TicketPanel 
                     cart={cart} total={total} metodoPago={metodoPago} setMetodoPago={setMetodoPago}
-<<<<<<< HEAD
                     quitarDelCarrito={quitarDelCarrito} agregarAlCarrito={agregarAlCarrito} guardarOrden={ord.guardarOrden} errorMesaOcupada={ord.errorMesaOcupada}
-=======
-                    quitarDelCarrito={quitarDelCarrito} guardarOrden={ord.guardarOrden} errorMesaOcupada={ord.errorMesaOcupada}
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
                     setErrorMesaOcupada={ord.setErrorMesaOcupada}cobrarOrden={() => ord.cobrarOrden(metodoPago)}
                     generarCierreDia={rep.generarCierreDia} solicitarAccesoCajero={acc.solicitarAccesoCajero}
                     solicitarAccesoAdmin={acc.solicitarAccesoAdmin} registrarGasto={gst.registrarGasto}

@@ -69,7 +69,6 @@ const addProduct = async (product) => {
 
   setItems(prev => {
     const existingIdx = prev.findIndex(it => (it._id || it.id) === pId && (!it.comentario || it.comentario.trim() === ''));
-<<<<<<< HEAD
     if (existingIdx !== -1) {
       const copy = [...prev];
       const nuevaCantidad = copy[existingIdx].cantidad + 1;
@@ -79,35 +78,6 @@ const addProduct = async (product) => {
     return [...prev, { ...product, _id: pId, lineId: crypto.randomUUID(), cantidad: 1, precioNum, subtotalNum: precioNum, comentario: '',categoria: product.categoria || "COCINA" }];
   });
 
-=======
-    
-    if (existingIdx !== -1) {
-      const copy = [...prev];
-      const nuevaCantidad = copy[existingIdx].cantidad + 1;
-      copy[existingIdx] = { 
-        ...copy[existingIdx], 
-        cantidad: nuevaCantidad, 
-        subtotalNum: nuevaCantidad * precioNum 
-      };
-      return copy;
-    }
-
-    // 🆕 RETORNO SEGURO: Mantenemos tu lógica pero blindamos los campos de impresión
-    return [...prev, { 
-      ...product, 
-      _id: pId, 
-      lineId: crypto.randomUUID(), 
-      cantidad: 1, 
-      precioNum, 
-      subtotalNum: precioNum, 
-      comentario: '',
-      // 🛡️ Normalizamos categoría para que la APK no falle por minúsculas
-      categoria: (product.categoria).trim().toUpperCase(),
-      // 🛡️ Capturamos la bandera de impresión que configuraste en Sanity
-      seImprime: product.seImprime !== false 
-    }];
-  });
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
   // --- 🛡️ 2. LÓGICA DE INVENTARIO Y REVERSIÓN ---
   if (product.controlaInventario && insumoId) {
     fetch('/api/inventario/descontar', {
@@ -164,12 +134,7 @@ const addProduct = async (product) => {
       precioNum: cleanPrice(p.precioUnitario),
       subtotalNum: cleanPrice(p.precioUnitario) * (Number(p.cantidad) || 1),
       comentario: p.comentario || "",
-<<<<<<< HEAD
       categoria: p.categoria || "COCINA",
-=======
-      categoria: (p.categoria).trim().toUpperCase(),
-      seImprime: p.seImprime !== false,
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
       // 🚨 ESTOS SON LOS CABLES QUE FALTABAN:
       controlaInventario: p.controlaInventario || false,
       insumoVinculado: p.insumoVinculado || null,
