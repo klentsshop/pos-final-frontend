@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 // 🛡️ ADAPTADOR: Gestiona si cargamos datos de Sanity o de DEMO_DATA
 import { getProductos, getMeseros } from '@/lib/dataAdapter';
 import { ENV, DEMO_DATA } from '@/lib/env';
@@ -51,7 +51,14 @@ export default function MenuPanel() {
     const [mostrarInventario, setMostrarInventario] = useState(false);
 
     const rep = useReportes(getFechaBogota);
-    const imp = useImpresion(cart); 
+    const imp = useImpresion(cart, RESTAURANTE_CONFIG.logic);
+    const datosAgrupados = React.useMemo(() => {
+    if (!cart?.length) return { cliente: [], cocina: [] };
+    return {
+        cliente: imp.agruparParaCliente(),
+        cocina: imp.agruparParaCocina()
+    };
+}, [cart]);
     const gst = useGastos();
     
     const acc = useAccesos(RESTAURANTE_CONFIG, setNombreMesero, {
@@ -63,11 +70,11 @@ export default function MenuPanel() {
             }, 100);
         }
     });
-
+    const { tipoOrden } = useCart();
     const ord = useOrdenHandlers({
         cart, total, clearCart, clearWithStockReturn, setCartFromOrden, apiGuardar, apiEliminar, 
         refreshOrdenes, ordenesActivas, esModoCajero: acc.esModoCajero, 
-        setMostrarCarritoMobile, nombreMesero, setNombreMesero
+        setMostrarCarritoMobile, nombreMesero, setNombreMesero, tipoOrden
     });
 
     const handleReimprimirVenta = async (venta) => {
@@ -111,13 +118,14 @@ export default function MenuPanel() {
         fetchData();
     }, []);
 
-    const platosFiltradosFinal = platos.filter(p => {
-    const nombre = p.nombrePlato || p.nombre || "";
-    const cumpleBusqueda = nombre.toLowerCase().includes(busqueda.toLowerCase());
-    const cumpleCategoria = categoriaActiva === 'todos' || p.categoria === categoriaActiva;
-    
-    return cumpleBusqueda && cumpleCategoria;
-});
+    const platosFiltradosFinal = React.useMemo(() => {
+    return platos.filter(p => {
+        const nombre = p.nombrePlato || p.nombre || "";
+        const cumpleBusqueda = nombre.toLowerCase().includes(busqueda.toLowerCase());
+        const cumpleCategoria = categoriaActiva === 'todos' || p.categoria === categoriaActiva;
+        return cumpleBusqueda && cumpleCategoria;
+    });
+}, [platos, busqueda, categoriaActiva]);
 
 // Función para limpiar platos y soltar la mesa (quita el modo "Actualizar")
     const manejarLimpiezaTotal = () => {
@@ -149,7 +157,7 @@ export default function MenuPanel() {
                     listaMeseros={listaMeseros} esModoCajero={acc.esModoCajero}
                     ordenActivaId={ord.ordenActivaId} numOrdenesActivas={ordenesActivas.length} 
                     cleanPrice={cleanPrice} styles={styles} cancelarOrden={ord.cancelarOrden} 
-                   clearCart={manejarLimpiezaTotal} imprimirTicket={imp.imprimirCliente} 
+                   clearCart={manejarLimpiezaTotal} imprimirTicket={imp.imprimirTicket} mensajeExito={ord.mensajeExito}
                     actualizarComentario={actualizarComentario} imprimirComandaCocina={imp.imprimirCocina}
                     propina={propina} setPropina={setPropina} montoManual={montoManual} setMontoManual={setMontoManual}
                     setMostrarModalHistorial={setMostrarModalHistorial} setMostrarInventario={setMostrarInventario}
@@ -175,8 +183,7 @@ export default function MenuPanel() {
                 <PrintTemplates 
                     cart={cart} total={total} ordenMesa={ord.ordenMesa} 
                     nombreMesero={nombreMesero} config={RESTAURANTE_CONFIG} 
-                    agrupadoCliente={imp.agruparParaCliente()} 
-                    agrupadoCocina={imp.agruparParaCocina()}
+                    agrupadoCliente={datosAgrupados.cliente}                agrupadoCocina={datosAgrupados.cocina}
                     ordenActivaId={ord.ordenActivaId}
                     cleanPrice={cleanPrice}
                     propina={propina} montoManual={montoManual}

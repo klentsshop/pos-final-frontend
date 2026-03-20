@@ -14,6 +14,7 @@ export async function GET() {
             _id,
             mesa,
             mesero,
+            tipoOrden,
             fechaCreacion,
             platosOrdenados,
             imprimirSolicitada
@@ -35,7 +36,7 @@ export async function GET() {
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { mesa, mesero, platosOrdenados, ordenId } = body;
+        const { mesa, mesero, platosOrdenados, ordenId, tipoOrden } = body;
 
         // Validación de entrada original
         if (!mesa || !Array.isArray(platosOrdenados) || platosOrdenados.length === 0) {
@@ -98,6 +99,7 @@ export async function POST(request) {
                 set: {
                     mesa,
                     mesero,
+                    tipoOrden: tipoOrden || 'mesa',
                     platosOrdenados: platosNormalizados,
                     ultimaActualizacion: fechaActual,
                     imprimirSolicitada: valorSolicitada,
@@ -111,6 +113,7 @@ export async function POST(request) {
                 _type: 'ordenActiva',
                 mesa,
                 mesero,
+                tipoOrden: tipoOrden || 'mesa',
                 fechaCreacion: fechaActual,
                 ultimaActualizacion: fechaActual,
                 platosOrdenados: platosNormalizados,

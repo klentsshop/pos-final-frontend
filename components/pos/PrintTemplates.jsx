@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import styles from '@/app/MenuPanel.module.css';
 // ✅ Importamos la configuración maestra
 import { SITE_CONFIG } from '@/lib/config';
 
-export const PrintTemplates = ({
+export const PrintTemplates = memo(({
     cart,
     total,
     ordenMesa,
@@ -203,4 +203,5 @@ export const PrintTemplates = ({
             </div>
         </div>
     );
-};
+});
+PrintTemplates.displayName = 'PrintTemplates';

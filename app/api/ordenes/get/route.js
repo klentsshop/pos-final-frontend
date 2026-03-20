@@ -19,14 +19,11 @@ export async function POST(request) {
                 _id,
                 mesa,
                 mesero,  // 🔥 AGREGADO: Ahora la API sí entregará el nombre (Diana, Mauricio, etc.)
+                tipoOrden,
                 fechaCreacion,
                 platosOrdenados[] {
                     _key,
                     nombrePlato,
-<<<<<<< HEAD
-=======
-                    categoria,
->>>>>>> 769bd3ce05c4a5150be1c5630ce091997fa468a5
                     cantidad,
                     precioUnitario,
                     subtotal,

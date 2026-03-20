@@ -17,8 +17,9 @@ export async function POST(req) {
         const totalPagado = Number(payload.totalPagado) || 0;
         const propinaRecaudada = Number(payload.propinaRecaudada) || 0;
         const ordenId = payload.ordenId;
-        const tipoOrden = payload.tipoOrden || 'mesa';
-
+        const tipoOrden = typeof payload.tipoOrden === 'string' 
+    ? payload.tipoOrden.trim() 
+    : 'mesa';
         // --- FECHAS Y FOLIO (Lógica original preservada) ---
         const now = new Date();
         const fechaUTC = now.toISOString();

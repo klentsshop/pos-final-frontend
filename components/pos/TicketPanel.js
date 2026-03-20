@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { formatPrecioDisplay, METODOS_PAGO } from '@/lib/utils';
 // ✅ Importamos la configuración maestra para volverlo vendible
 import { SITE_CONFIG } from '@/lib/config';
+import { useCart } from '@/app/context/CartContext';
 
 /**
  * 🛡️ COMPONENTE INTERNO: InputComentario
@@ -54,6 +55,7 @@ export default function TicketPanel({
     clearCart,
     imprimirComandaCocina,
     imprimirTicket, 
+    mensajeExito,
     actualizarComentario,
     propina = 0, setPropina, // 👈 Props para propina
     montoManual = 0, setMontoManual,
@@ -71,7 +73,28 @@ export default function TicketPanel({
     const iconoPagoActual = METODOS_PAGO.find(m => m.value === metodoPago)?.title.split(' ')[0] || '💰';
     // ... justo antes del return del TicketPanel
      const [pagaCon, setPagaCon] = useState('');
-     const [tipoOrden, setTipoOrden] = useState('mesa');
+     const { tipoOrden, setTipoOrden } = useCart();
+    
+     // ✨ LOGICA PRO: Salto automático del radio button según el nombre
+     useEffect(() => {
+        if (!ordenMesa) return; 
+
+        const nombre = ordenMesa.toLowerCase().trim();
+        
+        // Detección de Domicilio
+        if (nombre.startsWith('domi')) {
+            if (tipoOrden !== 'domicilio') setTipoOrden('domicilio');
+        } 
+        // Detección de Llevar
+        else if (nombre.startsWith('llevar')) {
+            if (tipoOrden !== 'llevar') setTipoOrden('llevar');
+        } 
+        // Detección de Mesa (Solo si es un número puro o empieza por "mesa")
+        else if (/^\d+$/.test(nombre) || nombre.startsWith('mesa')) {
+            if (tipoOrden !== 'mesa') setTipoOrden('mesa');
+        }
+     }, [ordenMesa, setTipoOrden, tipoOrden]); // Agregamos tipoOrden al array de dependencias por buena práctica
+
      const cambio = pagaCon && Number(pagaCon) > 0 ? (Number(pagaCon) - total) : 0;
     return (
         <div 
@@ -298,92 +321,87 @@ export default function TicketPanel({
                             if (!esPriA && esPriB) return 1;
                             return nameA.localeCompare(nameB);
                         })
-                        .map(item => (
-            <div key={item.lineId} style={{ display: 'flex', flexDirection: 'column', padding: '12px 0', borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                        <strong style={{ fontSize: '1.05rem', color: '#111827', lineHeight: '1.2' }}>{item.nombre}</strong><br/>
-                        <small style={{ fontSize: '0.85rem', color: '#6B7280' }}>
-                            ${(item.precioNum || 0).toLocaleString(SITE_CONFIG.brand.currency)} c/u
-                        </small>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {/* Subtotal del item */}
-                        <strong style={{ fontSize: '1rem', fontWeight: '700', color: '#111827' }}>
-                            {((item.precioNum || 0) * item.cantidad).toLocaleString(SITE_CONFIG.brand.currency)}
-                        </strong>
-
-                        {/* 💊 CONTROLES DE CANTIDAD (NUEVO ORDEN: + VALOR -) */}
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px', 
-                            backgroundColor: '#F3F4F6', 
-                            padding: '4px 8px', 
-                            borderRadius: '20px',
-                            border: '1px solid #E5E7EB'
-                        }}>
-                            {/* 1. Botón MÁS (+) a la izquierda */}
-                            <button 
-                                onClick={() => agregarAlCarrito(item)} 
-                                style={{ 
-                                    color: '#059669', 
-                                    border: 'none', 
-                                    background: 'none', 
-                                    fontSize: '1.4rem', 
-                                    fontWeight: 'bold', 
-                                    cursor: 'pointer',
-                                    padding: '0 5px',
-                                    lineHeight: 1
-                                }}
-                            >
-                                +
-                            </button>
-
-                            {/* 2. Cantidad en el centro */}
-                            <span style={{ 
-                                fontSize: '0.95rem', 
-                                fontWeight: '850', 
-                                minWidth: '20px', 
-                                textAlign: 'center',
-                                color: '#374151'
-                            }}>
-                                {item.cantidad}
-                            </span>
-
-                            {/* 3. Botón MENOS (-) a la derecha */}
-                            <button 
-                                onClick={() => quitarDelCarrito(item.lineId)} 
-                                style={{ 
-                                    color: SITE_CONFIG.theme.danger, 
-                                    border: 'none', 
-                                    background: 'none', 
-                                    fontSize: '1.4rem', 
-                                    fontWeight: 'bold', 
-                                    cursor: 'pointer',
-                                    padding: '0 5px',
-                                    lineHeight: 1
-                                }}
-                            >
-                                −
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                {/* Campo de Comentarios (Notas para cocina) */}
-                <InputComentario item={item} actualizarComentario={actualizarComentario} />
+                       // ✅ USA ESTE BLOQUE: Es el más seguro y recupera tu estilo
+         .map(item => (
+     <div key={item.lineId} style={{ display: 'flex', flexDirection: 'column', padding: '10px 0', borderBottom: '1px solid #eee' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            
+            {/* IZQUIERDA: Nombre y Multiplicador (Indispensable para impresión) */}
+            <div style={{ flex: 1 }}>
+                <strong style={{ fontSize: '1.05rem', color: '#111827', lineHeight: '1.2' }}>{item.nombre}</strong><br/>
+                <small style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+                    ${(item.precioNum || 0).toLocaleString(SITE_CONFIG.brand.currency)} x {item.cantidad}
+                </small>
             </div>
-        ))
+
+            {/* DERECHA: ORDEN SOLICITADO [ + ] [ PRECIO ] [ - ] */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                
+                {/* 1. BOTÓN MÁS (Circular Verde) */}
+                <button 
+                    onClick={() => agregarAlCarrito(item)} 
+                    style={{ 
+                        color: '#059669', 
+                        border: '1px solid #059669',
+                        borderRadius: '50%', 
+                        width: '24px', 
+                        height: '24px', 
+                        cursor: 'pointer',
+                        background: 'none', 
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1rem',
+                        lineHeight: 1
+                    }}
+                >
+                    +
+                </button>
+
+                {/* 2. PRECIO TOTAL DEL ITEM (En el medio) */}
+                <strong style={{ fontSize: '1rem', fontWeight: '700', color: '#111827', minWidth: '55px', textAlign: 'center' }}>
+                    {((item.precioNum || 0) * item.cantidad).toLocaleString(SITE_CONFIG.brand.currency)}
+                </strong>
+
+                {/* 3. BOTÓN MENOS (Circular Rojo) */}
+                <button 
+                    onClick={() => quitarDelCarrito(item.lineId)} 
+                    style={{ 
+                        color: SITE_CONFIG.theme.danger, 
+                        border: `1px solid ${SITE_CONFIG.theme.danger}`,
+                        borderRadius: '50%', 
+                        width: '24px', 
+                        height: '24px', 
+                        cursor: 'pointer',
+                        background: 'none', 
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1rem',
+                        lineHeight: 1
+                    }}
+                >
+                    -
+                </button>
+            </div>
+        </div>
+
+        {/* Campo de Comentarios */}
+        <div style={{ marginTop: '4px' }}>
+            <InputComentario item={item} actualizarComentario={actualizarComentario} />
+        </div>
+    </div>
+))
                 )}
             </div>
 
             {/* 4. PIE DE PÁGINA - SELECTORES MEJORADOS Y CAMPO OTRO */}
-            <div style={{ padding: '12px 15px', background: 'white', borderTop: '2px solid #eee', flexShrink: 0 }}>
+            <div style={{ padding: '6px 12px', background: 'white', borderTop: '2px solid #eee', flexShrink: 0 }}>
                 
                 {/* 💳 SELECTORES: PAGO, PROPINA Y CAMPO OTRO */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <div style={{ flex: 1, position: 'relative' }}>
                             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>{iconoPagoActual}</span>
@@ -427,44 +445,46 @@ export default function TicketPanel({
                     <div style={{ 
                         display: 'flex', 
                         justifyContent: 'space-between', 
-                        padding: '8px 10px', 
+                        padding: '4px 10px', 
                         backgroundColor: '#F9FAFB', 
                         borderRadius: '8px', 
                         border: '1px solid #E5E7EB'
                     }}>
-                        {[
-                            { id: 'mesa', label: 'Mesa', icon: '🏠' },
-                            { id: 'domicilio', label: 'Domi', icon: '🛵' },
-                            { id: 'llevar', label: 'Llevar', icon: '🛍️' }
-                        ].map((opcion) => (
-                            <label 
-                                key={opcion.id} 
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '6px', 
-                                    cursor: 'pointer',
-                                    fontSize: '0.85rem',
-                                    fontWeight: '800',
-                                    color: tipoOrden === opcion.id ? '#10B981' : '#6B7280'
-                                }}
-                            >
+                       {[
+                   { id: 'mesa', label: 'Mesa', icon: '🏠' },
+                   { id: 'domicilio', label: 'Domi', icon: '🛵' },
+                   { id: 'llevar', label: 'Llevar', icon: '🛍️' }
+                   ].map((opcion) => (
+                   <label 
+                   key={opcion.id} 
+                   style={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   gap: '4px', 
+                   cursor: 'pointer',
+                   fontSize: '0.85rem',
+                   fontWeight: '800',
+                   // ✅ Cambiamos tipoOrden por (tipoOrden || 'mesa')
+                    color: (tipoOrden || 'mesa') === opcion.id ? '#10B981' : '#6B7280'
+                   }}
+                   >
                                 <input
-                                    type="radio"
-                                    name="tipoServicio"
-                                    value={opcion.id}
-                                    checked={tipoOrden === opcion.id}
-                                    onChange={() => setTipoOrden(opcion.id)}
-                                    style={{ 
-                                        cursor: 'pointer',
-                                        accentColor: '#10B981',
-                                        width: '16px',
-                                        height: '16px'
-                                    }}
-                                />
-                                {opcion.label}
-                            </label>
-                        ))}
+                   type="radio"
+                   name="tipoServicio"
+                   value={opcion.id}
+                   // ✅ Cambiamos tipoOrden por (tipoOrden || 'mesa')
+                   checked={(tipoOrden || 'mesa') === opcion.id}
+                   onChange={() => setTipoOrden(opcion.id)}
+                   style={{ 
+                   cursor: 'pointer',
+                   accentColor: '#10B981',
+                   width: '16px',
+                   height: '16px'
+                  }}
+                  />
+                   {opcion.label}
+                   </label>
+                   ))}
                     </div>
                     {/* 💰 CAMPO PARA MONTO MANUAL (Solo aparece si se elige valor manual) */}
                     {propina === -1 && (
@@ -485,9 +505,9 @@ export default function TicketPanel({
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center', 
-                    padding: '6px 0', 
+                    padding: '2px 0', 
                     borderTop: '1px solid #eee',
-                    marginBottom: '6px'
+                    marginBottom: '4px'
                 }}>
                     {/* IZQUIERDA: Calculadora compacta con input más ancho */}
                     {esModoCajero ? (
@@ -502,8 +522,8 @@ export default function TicketPanel({
                                         value={pagaCon}
                                         onChange={(e) => setPagaCon(e.target.value)}
                                         style={{ 
-                                            width: '110px', 
-                                            padding: '4px 6px 4px 16px', 
+                                            width: '130px', 
+                                            padding: '2px 4px 2px 12px',
                                             borderRadius: '6px', 
                                             border: '1px solid #D1D5DB', 
                                             fontSize: '0.9rem', 
@@ -544,66 +564,75 @@ export default function TicketPanel({
                 <div style={{ display: 'flex', gap: '4px', width: '100%', alignItems: 'center' }}>
     {/* 1. SECCIÓN IMPRESIÓN: Solo si hay algo en el carrito */}
     {cart.length > 0 && (
-        <>
-            <button 
-                onClick={imprimirTicket} 
-                style={{ 
-                    flex: '0 0 16%', // Ajuste para que no empuje a los demás
-                    padding: '12px 1px', 
-                    backgroundColor: SITE_CONFIG.theme.secondary, 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '6px', 
-                    fontWeight: '800', 
-                    fontSize: '0.60rem', 
-                    cursor: 'pointer' 
-                }}
-            >
-                CLIENTE
-            </button>
-            <button 
-                onClick={imprimirComandaCocina} 
-                style={{ 
-                    flex: '0 0 16%', 
-                    padding: '12px 1px', 
-                    backgroundColor: SITE_CONFIG.theme.dark, 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '6px', 
-                    fontWeight: '800', 
-                    fontSize: '0.60rem', 
-                    cursor: 'pointer' 
-                }}
-            >
-                COCINA
-            </button>
-        </>
-    )}
-
-    {/* 2. BOTÓN BORRAR: Aparece solo si la mesa ya existe en Sanity (ordenActivaId) */}
-    {ordenActivaId && (
+    <>
+        {/* 1. BOTÓN CLIENTE (Ahora envía datos para el Salto Pro) */}
         <button 
-            className={styles.btnNegro} 
-            onClick={cancelarOrden}
+            onClick={() => imprimirTicket({ 
+        mesa: ordenMesa, 
+        mesero: nombreMesero, 
+        tipoOrden: tipoOrden,
+        propina: propina,
+        montoManual: montoManual
+            })} 
             style={{ 
                 flex: '0 0 16%', 
                 padding: '12px 1px', 
-                backgroundColor: '#000', 
-                color: '#ff4444', 
-                border: '1px solid #ff4444', 
+                backgroundColor: SITE_CONFIG.theme.secondary, 
+                color: 'white', 
+                border: 'none', 
                 borderRadius: '6px', 
                 fontWeight: '800', 
                 fontSize: '0.60rem', 
                 cursor: 'pointer' 
             }}
         >
-            BORRAR
+            CLIENTE
+        </button>
+
+        {/* 2. BOTÓN COCINA (Mantiene su lógica de comanda interna) */}
+        <button 
+            onClick={imprimirComandaCocina} 
+            style={{ 
+                flex: '0 0 16%', 
+                padding: '12px 1px', 
+                backgroundColor: SITE_CONFIG.theme.dark, 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '6px', 
+                fontWeight: '800', 
+                fontSize: '0.60rem', 
+                cursor: 'pointer' 
+            }}
+        >
+            COCINA
+        </button>
+    </>
+)}
+    {/* 2. BOTÓN BORRAR: Aparece solo si la mesa ya existe en Sanity (ordenActivaId) */}
+    {ordenActivaId && (
+        <button 
+            className={styles.btnNegro} 
+            onClick={cancelarOrden}
+            disabled={mensajeExito}
+            style={{ 
+                flex: '0 0 16%', 
+                padding: '12px 1px', 
+                backgroundColor: mensajeExito ? '#1a1a1a' : '#000', 
+                color: '#ff4444', 
+                border: '1px solid #ff4444', 
+                borderRadius: '6px', 
+                fontWeight: '800', 
+                fontSize: '0.60rem', 
+                cursor: mensajeExito ? 'not-allowed' : 'pointer', 
+            }}
+        >
+            {mensajeExito ? '...' : 'BORRAR'}
         </button>
     )}
 
     {/* 3. BOTÓN GUARDAR / ACTUALIZAR: Siempre visible */}
     <button 
-        onClick={guardarOrden} 
+        onClick={() => guardarOrden()} 
         style={{ 
             flex: '1', 
             padding: '12px 2px', 
@@ -623,24 +652,25 @@ export default function TicketPanel({
 {esModoCajero && cart.length > 0 && (
     <button 
         onClick={() => {
-            cobrarOrden(metodoPago, tipoOrden); // 1. Ejecuta el proceso de cobro
+            cobrarOrden(metodoPago); // 1. Ejecuta el proceso de cobro
             setPagaCon(''); // 2. Limpia la calculadora de cambio
            
         }} 
+        disabled={mensajeExito}
         style={{ 
             flex: '1', 
             padding: '12px 2px', 
-            backgroundColor: SITE_CONFIG.theme.primary, 
+            backgroundColor: mensajeExito ? '#9ca3af' : SITE_CONFIG.theme.primary, 
             color: 'white', 
             border: 'none', 
             borderRadius: '6px', 
             fontWeight: '900', 
             fontSize: '0.75rem', 
-            cursor: 'pointer',
+            cursor: mensajeExito ? 'not-allowed' : 'pointer',
             minWidth: '0'
         }}
     >
-        COBRAR
+       {mensajeExito ? 'ENVIANDO...' : 'COBRAR'}
     </button>
 )}
 </div>

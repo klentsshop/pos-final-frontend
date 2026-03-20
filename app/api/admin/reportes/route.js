@@ -66,14 +66,23 @@ export async function POST(request) {
         ventas?.forEach(v => {
             const ventaNeta = Number(v.totalPagado || 0);
             const propina = Number(v.propinaRecaudada || 0);
-            const tipo = v.tipoOrden || 'mesa';
+            const tipo = (v.tipoOrden || 'mesa').toLowerCase().trim();
 
             totalPropinas += propina;
 
           // Suma directa sin rodeos
-            if (tipo === 'mesa') porTipoOrden.mesa += ventaNeta;
-            if (tipo === 'domicilio') porTipoOrden.domicilio += ventaNeta;
-            if (tipo === 'llevar') porTipoOrden.llevar += ventaNeta;
+            if (tipo === 'mesa') {
+    porTipoOrden.mesa += ventaNeta;
+} else if (tipo === 'domicilio' || tipo === 'domi') { 
+    // Ahora si llega "domi" o "domicilio", ambos suman aquí
+    porTipoOrden.domicilio += ventaNeta;
+} else if (tipo === 'llevar') {
+    porTipoOrden.llevar += ventaNeta;
+} else {
+    // Si por algún error llega vacío o algo raro, lo sumamos a mesa 
+    // para que el TOTAL de ventas siempre cuadre.
+    porTipoOrden.mesa += ventaNeta;
+}
         
             // Procesamiento de Meseros
             const nombreM = v.mesero || "General";

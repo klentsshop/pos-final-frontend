@@ -165,6 +165,7 @@ export function useReportes(getFechaBogota) {
                 porMesero,
                 gastos: totalGastos,
                 // Mantenemos tus estadisticas y sus valores por defecto
+                porTipoOrden: data.porTipoOrden || { mesa: 0, domicilio: 0, llevar: 0 },
                 estadisticas: data.estadisticas || {
                     metodosPago: { efectivo: 0, tarjeta: 0, transferencia: 0 },
                     topPlatos: [],

@@ -1,42 +1,37 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { formatPrecioDisplay, categoriasMap } from '@/lib/utils';
 import { urlFor } from '@/lib/sanity';
 // ✅ Importamos la configuración maestra para la moneda y lógica
 import { SITE_CONFIG } from '@/lib/config';
 
-export default function ProductGrid({
+const ProductGrid = memo(({
     platos, platosFiltrados, busqueda, setBusqueda, categoriaActiva, setCategoriaActiva,
     mostrarCategoriasMobile, setMostrarCategoriasMobile, agregarAlCarrito, 
     styles, mostrarCarritoMobile, setMostrarCarritoMobile, cart, total, mensajeExito, ordenesActivas, cargarOrden, ordenActivaId
-}) {
-    const listaCategorias = ['todos', ...new Set(platos.map(p => p.categoria))];
+}) => {
+    const listaCategorias = useMemo(() => ['todos', ...new Set(platos.map(p => p.categoria))], [platos]);
 
 // 🔥 2. LÓGICA DE ORDENAMIENTO INTELIGENTE (PROFESIONAL)
     // Usamos useMemo para ordenar los platos por popularidad (totalVentas) 
     // solo cuando estemos en la vista "todos" y no haya una búsqueda activa.
     // 🔥 REEMPLAZA ESTE BLOQUE EN TU PRODUCTGRID
-const platosFinales = React.useMemo(() => {
-    // Si hay una búsqueda activa, NO ordenamos por popularidad para no marear al mesero
+const platosFinales = useMemo(() => {
+    // Si no hay platos, no procesamos nada
+    if (!platosFiltrados || platosFiltrados.length === 0) return [];
+
+    // Si hay búsqueda, mostramos tal cual vienen para no saturar el procesador
     if (busqueda.trim() !== "") return platosFiltrados;
 
-    // Solo aplicamos el Orden Inteligente en la categoría "todos"
     if (categoriaActiva === 'todos') {
-        return [...platosFiltrados].sort((a, b) => {
-            // 🛡️ BLINDAJE TOTAL: Convertimos a número y forzamos 0 si es null/nulo
-            const ventasA = Number(a.totalVentas) || 0;
-            const ventasB = Number(b.totalVentas) || 0;
-
-            // Ordenar de Mayor a Menor
-            if (ventasB !== ventasA) {
-                return ventasB - ventasA;
-            }
-            
-            // Si las ventas son iguales, ordenamos alfabéticamente para que sea estable
-            return a.nombre.localeCompare(b.nombre);
+        // Hacemos una copia rápida para ordenar
+        const copia = [...platosFiltrados];
+        return copia.sort((a, b) => {
+            const vA = Number(a.totalVentas) || 0;
+            const vB = Number(b.totalVentas) || 0;
+            return vB - vA || (a.nombre || "").localeCompare(b.nombre || "");
         });
     }
 
-    // En categorías específicas, mantenemos el orden por nombre (nombre asc)
     return platosFiltrados;
 }, [platosFiltrados, busqueda, categoriaActiva]);
     return (
@@ -181,4 +176,8 @@ const platosFinales = React.useMemo(() => {
             
         </div>
     );
-}
+});
+
+ProductGrid.displayName = 'ProductGrid';
+
+export default ProductGrid;
