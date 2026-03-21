@@ -55,7 +55,7 @@ export async function POST(request) {
             
             // 🆕 Lógica Senior: Captura de categoría para la APK
             // .toUpperCase() es vital para que coincida con el Store de la tablet
-            const categoriaPlato = (p.categoria || "COCINA").trim().toUpperCase();
+            const categoriaPlato = (p.categoria || "").trim().toUpperCase();
             estacionesSet.add(categoriaPlato);
 
             return {

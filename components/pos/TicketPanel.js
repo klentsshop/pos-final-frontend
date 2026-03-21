@@ -81,6 +81,7 @@ export default function TicketPanel({
 
         const nombre = ordenMesa.toLowerCase().trim();
         
+        
         // Detección de Domicilio
         if (nombre.startsWith('domi')) {
             if (tipoOrden !== 'domicilio') setTipoOrden('domicilio');

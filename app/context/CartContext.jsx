@@ -102,7 +102,7 @@ export function CartProvider({ children }) {
         copy[existingIdx] = { ...copy[existingIdx], cantidad: nuevaCantidad, subtotalNum: nuevaCantidad * precioNum };
         return copy;
       }
-      return [...prev, { ...product, _id: pId, lineId: crypto.randomUUID(), cantidad: 1, precioNum, subtotalNum: precioNum, comentario: '', categoria: product.categoria || "COCINA" }];
+      return [...prev, { ...product, _id: pId, lineId: crypto.randomUUID(), cantidad: 1, precioNum, subtotalNum: precioNum, comentario: '', categoria: product.categoria || "" }];
     });
 
     // --- 🛡️ 2. LÓGICA DE INVENTARIO ---
@@ -160,7 +160,7 @@ export function CartProvider({ children }) {
       precioNum: cleanPrice(p.precioUnitario),
       subtotalNum: cleanPrice(p.precioUnitario) * (Number(p.cantidad) || 1),
       comentario: p.comentario || "",
-      categoria: p.categoria || "COCINA",
+      categoria: p.categoria || "",
       controlaInventario: p.controlaInventario || false,
       insumoVinculado: p.insumoVinculado || null,
       cantidadADescontar: p.cantidadADescontar || 0

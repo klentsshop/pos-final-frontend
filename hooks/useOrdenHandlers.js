@@ -48,12 +48,18 @@ export function useOrdenHandlers({
                 setTimeout(() => {
                     const platosParaCarrito = o.platosOrdenados.map(p => ({
                         ...p,
+                        // 1. Identidad del plato
                         nombre: p.nombrePlato || p.nombre,
                         precioNum: p.precioUnitario || p.precio,
+                        
+                        // 2. 🛡️ BLINDAJE DE CATEGORÍA: 
+                        categoria: (p.categoria || p.categoriaPlato || "").toString().toUpperCase().trim(),
+                        
+                        // 3. Flags de impresión y estado
                         seImprime: p.seImprime === true, 
-                        categoria: (p.categoria || "").trim().toUpperCase(),
                     }));
 
+                    // Enviamos al carrito con el tipo de orden recuperado de Sanity
                     setCartFromOrden(platosParaCarrito, o.tipoOrden || 'mesa'); 
                 }, 50);
 
@@ -82,9 +88,20 @@ export function useOrdenHandlers({
         let mesa = ordenMesa || prompt("Mesa o Cliente:", mesaDefault);
         if (!mesa) return;
 
+        const nombreNuevoNorm = mesa.toLowerCase().trim();
+
+        // ✨ DETECCIÓN SENIOR PARA EL RADIO (Justo después del prompt)
+        let tipoParaSanity = tipoOrden;
+     
+        if (nombreNuevoNorm.startsWith('domi')) {
+            tipoParaSanity = 'domicilio';
+        } else if (nombreNuevoNorm.startsWith('llevar')) {
+            tipoParaSanity = 'llevar';
+        } else if (/^\d+$/.test(nombreNuevoNorm) || nombreNuevoNorm.startsWith('mesa')) {
+            tipoParaSanity = 'mesa';
+        }
         // --- 🛡️ NUEVO ESCUDO HÍBRIDO "DOMI-SEGURO" ---
         if (!ordenActivaId) {
-            const nombreNuevoNorm = mesa.toLowerCase().trim();
             const soloNumerosNuevos = mesa.match(/\d+/g)?.join("");
 
             // Definimos qué palabras activan la flexibilidad de números
@@ -95,12 +112,11 @@ export function useOrdenHandlers({
                 const nombreExistenteNorm = (o.mesa || "").toLowerCase().trim();
                 const soloNumerosExistentes = (o.mesa || "").match(/\d+/g)?.join("");
 
-                // 1. Validación Texto Exacto: Si es igual (ej: "Domi 1" vs "DOMI 1"), bloquea siempre.
+                // 1. Validación Texto Exacto
                 const coincidenciaTexto = nombreExistenteNorm === nombreNuevoNorm;
                 if (coincidenciaTexto) return true;
 
                 // 2. Validación Numérica: Solo si NO es Domi/Llevar.
-                // Evita que "Mesa 1" bloquee a "Mesa 01", pero permite "Mesa 1" y "Domi 1".
                 if (!esBusquedaFlexible) {
                     const coincidenciaNumero = soloNumerosNuevos && soloNumerosExistentes && (soloNumerosNuevos === soloNumerosExistentes);
                     return coincidenciaNumero;
@@ -128,12 +144,13 @@ export function useOrdenHandlers({
         const platosParaGuardar = cart.map(i => ({ 
             _id: i._id,
             _key: i._key || i.lineId || `new-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`, 
-            nombrePlato: i.nombre, 
+            nombrePlato: i.nombre || i.nombrePlato, 
             cantidad: i.cantidad, 
             precioUnitario: i.precioNum, 
             subtotal: i.precioNum * i.cantidad,
             comentario: i.comentario || "",
-            categoria: (i.categoria || "COCINA").trim().toUpperCase(),
+            // 🚀 BISTURÍ: Aquí resolvemos el problema de la categoría en una sola línea
+            categoria: (i.categoria || i.categoriaPlato || i.nombreCategoria || "").toString().trim().toUpperCase(),
             seImprime: i.seImprime === true,
             controlaInventario: i.controlaInventario || false,
             insumoVinculado: i.insumoVinculado || null,
@@ -151,7 +168,7 @@ export function useOrdenHandlers({
                 ordenId: ordenActivaId, 
                 platosOrdenados: platosParaGuardar,
                 imprimirSolicitada: true, 
-                tipoOrden: tipoOrden || 'mesa',
+                tipoOrden: tipoParaSanity,
                 ultimaActualizacion: new Date().toISOString()
             });
             
@@ -178,14 +195,16 @@ export function useOrdenHandlers({
         if (cart.length === 0) return alert("⚠️ El carrito está vacío.");
         if (!esModoCajero) return alert("⚠️ Solo el cajero puede realizar cobros directos.");
         
-        // 1. Única confirmación (Tu original)
+        // 💰 CÁLCULO DE SEGURIDAD PARA PROPINA
+        const subtotalVenta = cart.reduce((s, i) => s + (Number(i.precioNum) * i.cantidad), 0);
+        const valorPropina = total > subtotalVenta ? total - subtotalVenta : 0;
+
+        // 1. Confirmación (Tu lógica original)
         if (!confirm(`💰 ¿Confirmar cobro por $${total.toLocaleString('es-CO')} en ${metodoPago}?`)) return;
 
-        // 🛡️ BLOQUEO DE SEGURIDAD (No toca datos, solo evita el doble clic)
         setMensajeExito(true); 
 
-        const subtotalVenta = cart.reduce((s, i) => s + (i.precioNum * i.cantidad), 0);
-        const valorPropina = total - subtotalVenta;
+        // 📅 Fecha Local Bogotá (Tu lógica original intacta)
         const fechaLocal = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' })).toISOString();
 
         try {
@@ -204,7 +223,7 @@ export function useOrdenHandlers({
                     platosVendidosV2: cart.map(i => ({ 
                         nombrePlato: i.nombre || i.nombrePlato, 
                         cantidad: i.cantidad, 
-                        precioUnitario: i.precioNum, // ✅ Tu variable original intacta
+                        precioUnitario: i.precioNum, 
                         subtotal: i.precioNum * i.cantidad,
                         comentario: i.comentario || "" 
                     })) 
@@ -214,13 +233,13 @@ export function useOrdenHandlers({
             if (res.ok) {
                 const ventaGuardada = await res.json();
                 
-                // ✅ Quitamos el alert para que no haya que dar clic extra
-                
+                // Impresión automática del ticket
                 if (ventaGuardada?._id) {
                     const urlTicket = `/ticket/${ventaGuardada._id}?type=cliente&auto=true`;
                     window.open(urlTicket, 'ventana_impresion_unica', 'width=100,height=100');
                 }
 
+                // Limpieza rápida (Tu tiempo original de 0.5s)
                 setTimeout(async () => {
                     if (ordenActivaId) await apiEliminar(ordenActivaId);
                     clearCart(); 
@@ -229,16 +248,13 @@ export function useOrdenHandlers({
                     await refreshOrdenes();
                     if (rep?.cargarReporteAdmin) rep.cargarReporteAdmin();
                     
-                    // 🛡️ LIBERAMOS EL BOTÓN para la siguiente venta
                     setMensajeExito(false);
-                }, 500); // 👈 Limpieza rápida a los 0.5s
+                }, 500); 
             } else {
-                // Si falla la red, liberamos para reintentar
                 setMensajeExito(false);
                 alert("❌ Error en el servidor al procesar la venta.");
             }
         } catch (e) { 
-            // 🚨 Si hay error crítico, liberamos para que el cajero no quede bloqueado
             setMensajeExito(false);
             alert('❌ Error en el pago. Revisa la conexión.'); 
         }
@@ -286,6 +302,6 @@ export function useOrdenHandlers({
         setOrdenActivaId, setOrdenMesa
     }), [
         ordenActivaId, ordenMesa, nombreMesero, errorMesaOcupada, 
-        mensajeExito, textoBotonPrincipal, esModoCajero, cart.length
+        mensajeExito, textoBotonPrincipal, esModoCajero, cart.length, total, tipoOrden
     ]);
 }
