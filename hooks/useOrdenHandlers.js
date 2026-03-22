@@ -149,7 +149,7 @@ export function useOrdenHandlers({
             cantidad: i.cantidad, 
             precioUnitario: i.precioNum, 
             subtotal: i.precioNum * i.cantidad,
-            comentario: i.comentario || "",
+            comentario: String(i.comentario || "").trim(),
             // 🚀 BISTURÍ: Aquí resolvemos el problema de la categoría en una sola línea
             categoria: (i.categoria || i.categoriaPlato || i.nombreCategoria || "").toString().trim().toUpperCase(),
             seImprime: i.seImprime === true,
@@ -303,6 +303,6 @@ export function useOrdenHandlers({
         setOrdenActivaId, setOrdenMesa
     }), [
         ordenActivaId, ordenMesa, nombreMesero, errorMesaOcupada, 
-        mensajeExito, textoBotonPrincipal, esModoCajero, cart.length, total, tipoOrden
+        mensajeExito, textoBotonPrincipal, cart, esModoCajero, cart.length, total, tipoOrden
     ]);
 }

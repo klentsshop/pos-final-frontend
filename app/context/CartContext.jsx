@@ -95,11 +95,11 @@ export function CartProvider({ children }) {
     const precioNum = cleanPrice(product.precio);
 
     setItems(prev => {
-      // 🛡️ Mantenemos tu comparación original exacta (it._id || it.id)
+      // 🛡️ COMPARACIÓN PRO: Busca el mismo producto Y que tenga el MISMO comentario
       const existingIdx = prev.findIndex(it => 
-        (it._id || it.id) === pId && (!it.comentario || it.comentario.trim() === '')
+        (it._id || it.id) === pId && 
+        (it.comentario === (product.comentario || ''))
       );
-
       if (existingIdx !== -1) {
         const copy = [...prev];
         const itemActual = copy[existingIdx];
@@ -127,7 +127,7 @@ export function CartProvider({ children }) {
         cantidad: 1, 
         precioNum, 
         subtotalNum: precioNum, 
-        comentario: '', 
+        comentario: product.comentario || '', 
         categoria: product.categoria || "" 
       }];
     });

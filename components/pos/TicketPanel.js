@@ -56,7 +56,6 @@ export default function TicketPanel({
     imprimirComandaCocina,
     imprimirTicket, 
     mensajeExito,
-    actualizarComentario,
     propina = 0, setPropina, // 👈 Props para propina
     montoManual = 0, setMontoManual,
     setMostrarModalHistorial,
@@ -73,7 +72,7 @@ export default function TicketPanel({
     const iconoPagoActual = METODOS_PAGO.find(m => m.value === metodoPago)?.title.split(' ')[0] || '💰';
     // ... justo antes del return del TicketPanel
      const [pagaCon, setPagaCon] = useState('');
-     const { tipoOrden, setTipoOrden } = useCart();
+     const { actualizarComentario, tipoOrden, setTipoOrden } = useCart();
     
      // ✨ LOGICA PRO: Salto automático del radio button según el nombre
      useEffect(() => {
