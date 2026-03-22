@@ -23,6 +23,8 @@ export async function POST(request) {
                 fechaCreacion,
                 platosOrdenados[] {
                     _key,
+                    _id,
+                    categoria,
                     nombrePlato,
                     cantidad,
                     precioUnitario,

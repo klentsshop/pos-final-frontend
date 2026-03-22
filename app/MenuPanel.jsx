@@ -96,11 +96,11 @@ export default function MenuPanel() {
    };
     useEffect(() => {
         const fetchData = async () => {
+            setCargando(true); // Bloqueo preventivo al iniciar
             try {
                 if (ENV.mode === "template") {
-                    setPlatos(DEMO_DATA.platos);
-                    setListaMeseros(DEMO_DATA.meseros);
-                    setCargando(false);
+                    setPlatos(Object.freeze(DEMO_DATA.platos)); // Inmutabilidad
+                    setListaMeseros(Object.freeze(DEMO_DATA.meseros));
                     return;
                 }
 
@@ -108,11 +108,14 @@ export default function MenuPanel() {
                     getProductos(),
                     getMeseros()
                 ]);
-                setPlatos(platosData);
-                setListaMeseros(meserosData);
-                setCargando(false);
+                
+                // Usamos un solo renderizado para ambos estados
+                setPlatos(platosData || []);
+                setListaMeseros(meserosData || []);
             } catch (error) { 
-                console.error("Error en MenuPanel:", error); 
+                console.error("🔥 Error Crítico Load MenuPanel:", error); 
+            } finally {
+                setCargando(false);
             }
         };
         fetchData();
@@ -129,6 +132,7 @@ export default function MenuPanel() {
 
 // Función para limpiar platos y soltar la mesa (quita el modo "Actualizar")
     const manejarLimpiezaTotal = () => {
+    if (ord.mensajeExito) return;
     // 🛡️ Solo devolvemos stock si NO hay una orden activa de Sanity cargada
     // Si ord.ordenActivaId es null, significa que es una orden nueva en el "Mostrador"
     if (!ord.ordenActivaId) {

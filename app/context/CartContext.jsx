@@ -95,14 +95,41 @@ export function CartProvider({ children }) {
     const precioNum = cleanPrice(product.precio);
 
     setItems(prev => {
-      const existingIdx = prev.findIndex(it => (it._id || it.id) === pId && (!it.comentario || it.comentario.trim() === ''));
+      // 🛡️ Mantenemos tu comparación original exacta (it._id || it.id)
+      const existingIdx = prev.findIndex(it => 
+        (it._id || it.id) === pId && (!it.comentario || it.comentario.trim() === '')
+      );
+
       if (existingIdx !== -1) {
         const copy = [...prev];
-        const nuevaCantidad = copy[existingIdx].cantidad + 1;
-        copy[existingIdx] = { ...copy[existingIdx], cantidad: nuevaCantidad, subtotalNum: nuevaCantidad * precioNum };
+        const itemActual = copy[existingIdx];
+        const nuevaCantidad = itemActual.cantidad + 1;
+
+        // 🚀 EL BISTURÍ: 
+        // En lugar de solo cambiar cantidad, hacemos un spread del 'product' original
+        // Esto asegura que si el item en el carrito perdió la categoría o el ID real,
+        // al darle al botón [+] desde el menú, se RE-SINCRONICE con los datos frescos del producto.
+        copy[existingIdx] = { 
+          ...itemActual,           // Mantenemos lo que ya tenía (como el lineId)
+          ...product,              // Sobre-escribimos con datos frescos (ID real, Categoría, seImprime)
+          _id: pId,                // Aseguramos el ID alfanumérico
+          cantidad: nuevaCantidad, 
+          subtotalNum: nuevaCantidad * precioNum 
+        };
         return copy;
       }
-      return [...prev, { ...product, _id: pId, lineId: crypto.randomUUID(), cantidad: 1, precioNum, subtotalNum: precioNum, comentario: '', categoria: product.categoria || "" }];
+
+      // Si es nuevo, entra con su identidad completa
+      return [...prev, { 
+        ...product, 
+        _id: pId, 
+        lineId: crypto.randomUUID(), 
+        cantidad: 1, 
+        precioNum, 
+        subtotalNum: precioNum, 
+        comentario: '', 
+        categoria: product.categoria || "" 
+      }];
     });
 
     // --- 🛡️ 2. LÓGICA DE INVENTARIO ---
@@ -153,7 +180,7 @@ export function CartProvider({ children }) {
 
     const reconstruido = platosOrdenados.map(p => ({
       lineId: p._key || crypto.randomUUID(),
-      _id: p._id || p.nombrePlato,
+      _id: p._id || p.id || p.nombrePlato,
       nombre: p.nombrePlato,
       precio: cleanPrice(p.precioUnitario),
       cantidad: Number(p.cantidad) || 1,
