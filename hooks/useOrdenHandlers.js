@@ -50,6 +50,7 @@ export function useOrdenHandlers({
                         ...p,
                         // 1. Identidad del plato
                         nombre: p.nombrePlato || p.nombre,
+                        comentario: p.comentario || "",
                         precioNum: p.precioUnitario || p.precio,
                         
                         // 2. 🛡️ BLINDAJE DE CATEGORÍA: 
